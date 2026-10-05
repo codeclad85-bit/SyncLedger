@@ -12,17 +12,20 @@ window.SyncLedgerAuth = (() => {
         });
 
         const contentType = response.headers.get("content-type") || "";
+        const responsePath = new URL(response.url).pathname;
 
         if (response.redirected &&
-                new URL(response.url).pathname === "/login") {
+                ["/login", "/login.html"].includes(responsePath)) {
             throw new Error(
-                "Login expired. Open /login and sign in again. " +
+                "Login expired. Open /login.html and sign in again. " +
                 "Pending sales remain saved on this device."
             );
         }
 
         if (response.status === 401) {
-            throw new Error("Login required. Sign in again.");
+            throw new Error(
+                "Login required. Open /login.html and sign in again."
+            );
         }
 
         if (response.status === 403) {
@@ -47,11 +50,13 @@ window.SyncLedgerAuth = (() => {
         session = await requestJson("/api/auth/me");
 
         if (!["OWNER", "MANAGER"].includes(session.role)) {
+            session = null;
             throw new Error("Invalid account role.");
         }
 
         if (session.role === "MANAGER" &&
                 !["RANCHI-01", "PATNA-01"].includes(session.branchId)) {
+            session = null;
             throw new Error("No valid branch assigned to this account.");
         }
 
@@ -82,9 +87,14 @@ window.SyncLedgerAuth = (() => {
     async function logout() {
         const csrf = await requestJson("/api/auth/csrf");
 
+        if (!csrf.headerName || !csrf.token) {
+            throw new Error("Security token unavailable. Try again.");
+        }
+
         const response = await fetch("/logout", {
             method: "POST",
             credentials: "same-origin",
+            cache: "no-store",
             headers: {
                 [csrf.headerName]: csrf.token
             },
@@ -95,7 +105,8 @@ window.SyncLedgerAuth = (() => {
             throw new Error("Logout failed. Try again.");
         }
 
-        location.assign("/login?logout");
+        session = null;
+        location.replace("/login.html?logout");
     }
 
     return {
