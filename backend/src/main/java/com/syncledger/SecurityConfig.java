@@ -53,11 +53,15 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(
                                 "/login",
+                                "/login.html",
+                                "/login.js",
+                                "/login.css",
                                 "/error",
                                 "/favicon.ico",
                                 "/style.css",
                                 "/connection-status.js",
                                 "/auth-client.js",
+                                "/api/auth/csrf",
                                 "/api/health"
                         ).permitAll()
 
@@ -73,7 +77,6 @@ public class SecurityConfig {
                                 "/manager.html",
                                 "/manager.js",
                                 "/api/auth/me",
-                                "/api/auth/csrf",
                                 "/api/transactions",
                                 "/api/conflicts",
                                 "/api/sync"
@@ -89,12 +92,17 @@ public class SecurityConfig {
                 )
 
                 .formLogin(form -> form
+                        .loginPage("/login.html")
+                        .loginProcessingUrl("/login")
+                        .failureUrl("/login.html?error")
                         .successHandler((request, response, authentication) -> {
+
                             boolean owner = authentication.getAuthorities()
                                     .stream()
                                     .anyMatch(authority ->
-                                            authority.getAuthority()
-                                                    .equals("ROLE_OWNER"));
+                                            "ROLE_OWNER".equals(
+                                                    authority.getAuthority()
+                                            ));
 
                             if (owner) {
                                 response.sendRedirect("/");
@@ -104,8 +112,9 @@ public class SecurityConfig {
                             boolean ranchi = authentication.getAuthorities()
                                     .stream()
                                     .anyMatch(authority ->
-                                            authority.getAuthority()
-                                                    .equals("BRANCH_RANCHI-01"));
+                                            "BRANCH_RANCHI-01".equals(
+                                                    authority.getAuthority()
+                                            ));
 
                             response.sendRedirect(
                                     "/manager.html?branch="
@@ -116,7 +125,7 @@ public class SecurityConfig {
                 )
 
                 .logout(logout -> logout
-                        .logoutSuccessUrl("/login?logout")
+                        .logoutSuccessUrl("/login.html?logout")
                         .invalidateHttpSession(true)
                         .clearAuthentication(true)
                         .deleteCookies("JSESSIONID", "XSRF-TOKEN")

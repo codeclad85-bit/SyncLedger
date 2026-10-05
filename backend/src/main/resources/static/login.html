@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#050e1b">
+    <title>Sign In | SyncLedger</title>
+
+    <link rel="stylesheet" href="/login.css">
+    <script src="/login.js" defer></script>
+</head>
+<body>
+    <main class="login-layout">
+        <section class="intro" aria-labelledby="intro-title">
+            <a class="brand" href="/login.html">
+                <span class="brand-icon" aria-hidden="true">S</span>
+                <span>SyncLedger</span>
+            </a>
+
+            <span class="eyebrow">
+                OFFLINE PAYMENT RECONCILIATION SIMULATOR
+            </span>
+
+            <h1 id="intro-title">
+                Your branches.<br>
+                One clear ledger.
+            </h1>
+
+            <p class="intro-description">
+                Keep recording simulated sales during disconnection.
+                Reconcile pending records when the server connection returns.
+            </p>
+
+            <div class="branch-visual">
+                <svg viewBox="0 0 560 300"
+                     role="img"
+                     aria-labelledby="visual-title visual-description">
+                    <title id="visual-title">
+                        Branches connected to a central ledger
+                    </title>
+                    <desc id="visual-description">
+                        An illustration of Ranchi and Patna shops connected
+                        to the owner's central ledger.
+                    </desc>
+
+                    <defs>
+                        <linearGradient id="roof" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0" stop-color="#2584ab"/>
+                            <stop offset="1" stop-color="#14364f"/>
+                        </linearGradient>
+
+                        <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0" stop-color="#1c425c"/>
+                            <stop offset="1" stop-color="#0c2439"/>
+                        </linearGradient>
+
+                        <linearGradient id="window" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0" stop-color="#ffd999"/>
+                            <stop offset="1" stop-color="#bc8545"/>
+                        </linearGradient>
+
+                        <radialGradient id="ground-glow">
+                            <stop offset="0" stop-color="#00d4ed"
+                                  stop-opacity="0.18"/>
+                            <stop offset="1" stop-color="#00d4ed"
+                                  stop-opacity="0"/>
+                        </radialGradient>
+
+                        <g id="shop">
+                            <ellipse cx="0" cy="48" rx="79" ry="25"
+                                     fill="url(#ground-glow)"/>
+
+                            <path d="M-57 32 L0 58 L57 32 L0 8 Z"
+                                  fill="#0a1c2d"
+                                  stroke="#28516a"/>
+
+                            <rect x="-43" y="-32" width="86" height="69"
+                                  rx="3" fill="url(#wall)"
+                                  stroke="#3e7290"/>
+
+                            <path d="M-53 -32 L0 -58 L53 -32 L43 -20
+                                     L-43 -20 Z"
+                                  fill="url(#roof)"
+                                  stroke="#65d9ef"
+                                  stroke-width="1.5"/>
+
+                            <rect x="-35" y="-16" width="70" height="13"
+                                  rx="2" fill="#092b40"/>
+
+                            <rect x="-32" y="3" width="19" height="25"
+                                  rx="2" fill="url(#window)"/>
+
+                            <rect x="13" y="3" width="19" height="25"
+                                  rx="2" fill="url(#window)"/>
+
+                            <rect x="-8" y="1" width="16" height="35"
+                                  rx="2" fill="#123951"
+                                  stroke="#54bcd5"/>
+
+                            <path d="M-22 3 V28 M22 3 V28"
+                                  stroke="#735935" stroke-width="2"/>
+
+                            <path d="M-43 37 H43"
+                                  stroke="#5cddef" stroke-width="2"/>
+
+                            <circle cx="4" cy="20" r="1.5"
+                                    fill="#ffe3ab"/>
+                        </g>
+                    </defs>
+
+                    <ellipse cx="280" cy="185" rx="238" ry="96"
+                             fill="url(#ground-glow)"/>
+
+                    <path d="M135 219 Q78 90 258 96
+                             M302 96 Q482 88 425 219
+                             M154 240 Q280 283 407 240"
+                          fill="none"
+                          stroke="#00d4ed"
+                          stroke-width="2"
+                          stroke-dasharray="5 7"
+                          opacity="0.8"/>
+
+                    <path d="M270 132 L151 213 M290 132 L409 213"
+                          fill="none"
+                          stroke="#248ea8"
+                          stroke-width="1.5"
+                          opacity="0.65"/>
+
+                    <g transform="translate(280 108)">
+                        <use href="#shop"/>
+                        <text x="0" y="-6"
+                              text-anchor="middle"
+                              fill="#91edff"
+                              font-family="Segoe UI, Arial, sans-serif"
+                              font-size="9"
+                              font-weight="700">
+                            SYNCLEDGER
+                        </text>
+                    </g>
+
+                    <g transform="translate(135 221) scale(0.85)">
+                        <use href="#shop"/>
+                        <text x="0" y="-6"
+                              text-anchor="middle"
+                              fill="#91edff"
+                              font-family="Segoe UI, Arial, sans-serif"
+                              font-size="9"
+                              font-weight="700">
+                            RANCHI
+                        </text>
+                    </g>
+
+                    <g transform="translate(425 221) scale(0.85)">
+                        <use href="#shop"/>
+                        <text x="0" y="-6"
+                              text-anchor="middle"
+                              fill="#91edff"
+                              font-family="Segoe UI, Arial, sans-serif"
+                              font-size="9"
+                              font-weight="700">
+                            PATNA
+                        </text>
+                    </g>
+
+                    <g fill="#69edff">
+                        <circle cx="99" cy="157" r="4"/>
+                        <circle cx="460" cy="156" r="4"/>
+                        <circle cx="280" cy="267" r="4"/>
+                    </g>
+
+                    <text x="280" y="32"
+                          text-anchor="middle"
+                          fill="#c9edf9"
+                          font-family="Segoe UI, Arial, sans-serif"
+                          font-size="12"
+                          font-weight="600">
+                        OWNER'S CENTRAL LEDGER
+                    </text>
+                </svg>
+
+                <p class="visual-caption">
+                    Branch records reach the central ledger after synchronization.
+                </p>
+            </div>
+
+            <div class="demo-label">
+                <span class="status-dot" aria-hidden="true"></span>
+                Two demo branches: Ranchi and Patna
+            </div>
+        </section>
+
+        <section class="login-card" aria-labelledby="login-title">
+            <span class="card-eyebrow">YOUR WORKSPACE</span>
+            <h2 id="login-title">Welcome back</h2>
+            <p class="card-description">
+                Choose your workspace and sign in.
+            </p>
+
+            <div id="login-message"
+                 class="login-message"
+                 role="status"
+                 aria-live="polite"
+                 hidden>
+            </div>
+
+            <noscript>
+                <p class="login-message">
+                    Enable JavaScript to sign in to SyncLedger.
+                </p>
+            </noscript>
+
+            <form id="login-form" action="/login" method="post">
+                <div class="field">
+                    <span id="role-label" class="role-label">Login as</span>
+
+                    <div class="role-options"
+                         role="group"
+                         aria-labelledby="role-label">
+                        <div class="role-choice">
+                            <input id="role-owner"
+                                   type="radio"
+                                   name="workspace"
+                                   value="OWNER"
+                                   checked>
+                            <label for="role-owner">Owner</label>
+                        </div>
+
+                        <div class="role-choice">
+                            <input id="role-manager"
+                                   type="radio"
+                                   name="workspace"
+                                   value="MANAGER">
+                            <label for="role-manager">Branch Manager</label>
+                        </div>
+                    </div>
+
+                    <p id="role-help" class="field-help">
+                        View sales and review conflicts across all demo branches.
+                    </p>
+                </div>
+
+                <div class="field">
+                    <label for="username">Username</label>
+                    <input
+                        id="username"
+                        name="username"
+                        type="text"
+                        autocomplete="username"
+                        autocapitalize="none"
+                        spellcheck="false"
+                        maxlength="64"
+                        placeholder="Enter your username"
+                        aria-describedby="username-help"
+                        required
+                    >
+                    <p id="username-help" class="field-help">
+                        Use your assigned owner username.
+                    </p>
+                </div>
+
+                <div class="field">
+                    <label for="password">Password</label>
+                    <div class="password-field">
+                        <input
+                            id="password"
+                            name="password"
+                            type="password"
+                            autocomplete="current-password"
+                            placeholder="Enter your password"
+                            required
+                        >
+                        <button
+                            id="toggle-password"
+                            class="password-toggle"
+                            type="button"
+                            aria-controls="password"
+                            aria-label="Show password"
+                            aria-pressed="false"
+                        >
+                            Show
+                        </button>
+                    </div>
+                </div>
+
+                <input id="csrf-token" type="hidden">
+
+                <button id="login-submit"
+                        class="sign-in-button"
+                        type="submit"
+                        disabled>
+                    Preparing sign in...
+                </button>
+
+                <button id="login-retry"
+                        class="retry-button"
+                        type="button"
+                        hidden>
+                    Retry connection
+                </button>
+            </form>
+
+            <p class="access-note">
+                Owners can view all demo branches.
+                Managers can access only their assigned branch.
+            </p>
+
+            <footer class="card-footer">
+                Simulation only. No real money is transferred.
+                <br>
+                A server connection is required to sign in.
+            </footer>
+        </section>
+    </main>
+</body>
+</html>
