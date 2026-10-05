@@ -6,6 +6,7 @@
     <title>SyncLedger | Branch Manager</title>
     <link rel="stylesheet" href="style.css">
     <script src="manager.js" defer></script>
+    <script src="connection-status.js" defer></script>
 </head>
 <body>
     <aside class="sidebar">
@@ -51,7 +52,7 @@
         </header>
 
         <div id="manager-notice" class="notice"
-            role="status" aria-live="polite">
+             role="status" aria-live="polite">
             Initializing branch storage…
         </div>
 
@@ -111,21 +112,21 @@
 
                     <label for="manager-item">Item or Service</label>
                     <input id="manager-item" type="text"
-                        maxlength="120" placeholder="Example: Rice 5 kg"
-                        required>
+                           maxlength="120" placeholder="Example: Rice 5 kg"
+                           required>
 
                     <label for="manager-amount">Amount ₹</label>
                     <input id="manager-amount" type="number"
-                        inputmode="decimal" min="0.01"
-                        max="9999999999999.99" step="0.01"
-                        placeholder="Example: 300.00" required>
+                           inputmode="decimal" min="0.01"
+                           max="9999999999999.99" step="0.01"
+                           placeholder="Example: 300.00" required>
 
                     <label for="manager-note">Note — optional</label>
                     <textarea id="manager-note" rows="3" maxlength="500"
-                        placeholder="Details explaining this sale"></textarea>
+                              placeholder="Details explaining this sale"></textarea>
 
                     <button type="submit"
-                        class="button primary full-width">
+                            class="button primary full-width">
                         Save Sale
                     </button>
                 </form>
@@ -146,13 +147,11 @@
                 </span>
 
                 <button id="manager-sync"
-                    class="button primary full-width">
+                        class="button primary full-width">
                     Sync Pending Sales
                 </button>
 
-                <label for="manager-auto-sync">
-                    Automatic Sync
-                </label>
+                <label for="manager-auto-sync">Automatic Sync</label>
                 <select id="manager-auto-sync">
                     <option value="ON">On — retry pending sales when connected</option>
                     <option value="OFF">Off — sync manually for the demo</option>
@@ -203,8 +202,7 @@
                 <div class="panel-heading">
                     <h2>Server Verification</h2>
                 </div>
-                <div id="manager-verification"
-                    class="verification-box">
+                <div id="manager-verification" class="verification-box">
                     Select a sale.
                 </div>
             </article>
@@ -234,20 +232,16 @@
                 <summary>Testing Lab — branch failure simulation</summary>
 
                 <div class="control-grid">
-                    <button id="manager-toggle"
-                        class="button amber-button">
+                    <button id="manager-toggle" class="button amber-button">
                         Set Simulated Offline
                     </button>
-                    <button id="manager-drop"
-                        class="button amber-button">
+                    <button id="manager-drop" class="button amber-button">
                         Drop Next Confirmation: OFF
                     </button>
-                    <button id="manager-retry"
-                        class="button secondary">
+                    <button id="manager-retry" class="button secondary">
                         Retry Selected ×10
                     </button>
-                    <button id="manager-inject"
-                        class="button danger">
+                    <button id="manager-inject" class="button danger">
                         Inject Amount Conflict
                     </button>
                 </div>

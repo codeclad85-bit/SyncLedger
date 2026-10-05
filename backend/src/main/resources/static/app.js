@@ -1,6 +1,14 @@
 "use strict";
 
 const $ = (id) => document.getElementById(id);
+const categories = {
+    GROCERY: "Grocery / Kirana",
+    FOOD: "Food & Beverages",
+    CLOTHING: "Clothing",
+    ELECTRONICS: "Electronics",
+    SERVICES: "Services",
+    OTHER: "Other"
+};
 
 let db;
 let busy = false;
@@ -21,20 +29,7 @@ let state = {
     duplicates: 0
 };
 
-const categories = {
-    GROCERY: "Grocery / Kirana",
-    FOOD: "Food & Beverages",
-    CLOTHING: "Clothing",
-    ELECTRONICS: "Electronics",
-    SERVICES: "Services",
-    OTHER: "Other"
-};
-
-const clean = (value) => {
-    const text = String(value ?? "").trim();
-    return text || null;
-};
-
+const clean = (value) => String(value ?? "").trim() || null;
 const storeName = (id) => ({
     "RANCHI-01": "Ranchi Store",
     "PATNA-01": "Patna Store"
@@ -43,7 +38,7 @@ const storeName = (id) => ({
 function paise(value) {
     const text = String(value);
     if (!/^\d+(\.\d{1,2})?$/.test(text)) {
-        throw new Error("Enter a positive amount with up to 2 decimals.");
+        throw new Error("Enter an amount with up to two decimals.");
     }
     const [whole, fraction = ""] = text.split(".");
     return BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0"));
@@ -66,11 +61,40 @@ function notice(message, error = false) {
     $("notice").className = error ? "notice error" : "notice";
 }
 
+function element(tag, text, className = "") {
+    const node = document.createElement(tag);
+    if (text !== undefined) node.textContent = String(text);
+    node.className = className;
+    return node;
+}
+
+function badge(text, type) {
+    return element("span", text, "badge " + type.toLowerCase());
+}
+
+function cell(row, value) {
+    const td = document.createElement("td");
+    if (value instanceof Node) td.append(value);
+    else td.textContent = String(value ?? "");
+    row.append(td);
+    return td;
+}
+
+function emptyRow(body, columns, message) {
+    const row = document.createElement("tr");
+    const td = cell(row, message);
+    td.colSpan = columns;
+    td.className = "empty-state";
+    body.append(row);
+}
+
 function openStorage() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open("syncledger-local", 1);
         request.onupgradeneeded = () => {
-            request.result.createObjectStore("state");
+            if (!request.result.objectStoreNames.contains("state")) {
+                request.result.createObjectStore("state");
+            }
         };
         request.onsuccess = () => {
             db = request.result;
@@ -82,8 +106,8 @@ function openStorage() {
 
 function loadState() {
     return new Promise((resolve, reject) => {
-        const transaction = db.transaction("state", "readonly");
-        const request = transaction.objectStore("state").get("main");
+        const request = db.transaction("state", "readonly")
+            .objectStore("state").get("main");
         request.onsuccess = () => {
             if (request.result) {
                 state = {
@@ -115,21 +139,15 @@ function saveState() {
 
 function event(status, transactionId, reason) {
     state.events.unshift({
-        status, transactionId, reason,
+        status,
+        transactionId,
+        reason,
         time: new Date().toISOString()
     });
 }
 
 async function api(path, options = {}) {
-    const response = await fetch("/api" + path, {
-        ...options,
-        signal: AbortSignal.timeout(10000),
-        cache: "no-store"
-    });
-    if (!response.ok) {
-        throw new Error("Server returned HTTP " + response.status);
-    }
-    return response.json();
+    return window.SyncLedgerAuth.api(path, options);
 }
 
 async function refreshServer() {
@@ -138,7 +156,6 @@ async function refreshServer() {
         api("/conflicts"),
         api("/branches")
     ]);
-
     serverAvailable = results[0].status === "fulfilled" &&
         Array.isArray(results[0].value);
     conflictsAvailable = results[1].status === "fulfilled" &&
@@ -151,67 +168,56 @@ async function refreshServer() {
     if (branchesAvailable) branchOverview = results[2].value;
 
     if (!serverAvailable) {
-        notice("Server unavailable. Local sales are preserved.", true);
+        notice("Server data unavailable. Local sales are preserved.", true);
     }
     render();
 }
 
-function element(tag, text, className = "") {
-    const node = document.createElement(tag);
-    if (text !== undefined) node.textContent = String(text);
-    node.className = className;
-    return node;
-}
-
-function badge(text, type) {
-    return element("span", text, "badge " + type.toLowerCase());
-}
-
-function cell(row, value) {
-    const td = document.createElement("td");
-    if (value instanceof Node) td.append(value);
-    else td.textContent = String(value ?? "");
-    row.append(td);
-    return td;
-}
-
-function emptyRow(body, columns, message) {
-    const row = document.createElement("tr");
-    const td = cell(row, message);
-    td.colSpan = columns;
-    td.className = "empty-state";
-    body.append(row);
-}
-
 function selectedRecord() {
-    return state.records.find((r) => r.transactionId === state.selected);
+    return state.records.find(
+        (record) => record.transactionId === state.selected
+    );
 }
 
-function sameDetails(local, remote) {
-    if (!local || !remote) return false;
-    return local.transactionId === remote.transactionId &&
-        local.merchantId === remote.merchantId &&
-        local.currency === remote.currency &&
-        paise(local.amount) === paise(remote.amount) &&
-        Date.parse(local.createdAt) === Date.parse(remote.createdAt) &&
-        clean(local.category) === clean(remote.category) &&
-        clean(local.itemName) === clean(remote.itemName) &&
-        clean(local.note) === clean(remote.note);
+function sameDetails(a, b) {
+    return !!a && !!b &&
+        a.transactionId === b.transactionId &&
+        a.merchantId === b.merchantId &&
+        a.currency === b.currency &&
+        paise(a.amount) === paise(b.amount) &&
+        Date.parse(a.createdAt) === Date.parse(b.createdAt) &&
+        clean(a.category) === clean(b.category) &&
+        clean(a.itemName) === clean(b.itemName) &&
+        clean(a.note) === clean(b.note);
 }
 
 function visibleRecords(records) {
     return branchFilter === "ALL" ? records :
-        records.filter((r) => r.merchantId === branchFilter);
+        records.filter((record) => record.merchantId === branchFilter);
+}
+
+function chooseBranch(value) {
+    branchFilter = value;
+    $("branch-filter").value = value;
+    if (value !== "ALL") {
+        $("merchant-select").value = value;
+        $("target-device").value = value;
+    }
+    const selected = selectedRecord();
+    if (selected && value !== "ALL" && selected.merchantId !== value) {
+        state.selected = null;
+    }
+    render();
 }
 
 function renderBranches() {
     const container = $("branch-overview");
     container.replaceChildren();
-
     if (!branchesAvailable) {
-        $("owner-group").textContent = "Demo branch overview unavailable";
+        $("owner-group").textContent = "Branch overview unavailable";
         container.append(element(
-            "p", "Refresh after the updated backend starts.", "empty-state"
+            "p", "Connect to the server for current branch totals.",
+            "empty-state"
         ));
         return;
     }
@@ -224,11 +230,11 @@ function renderBranches() {
     for (const branch of branchOverview.branches) {
         const card = document.createElement("div");
         const pending = state.records.filter(
-            (r) => r.merchantId === branch.branchId &&
-                r.status === "PENDING"
+            (record) => record.merchantId === branch.branchId &&
+                record.status === "PENDING"
         );
         const pendingAmount = pending.reduce(
-            (sum, r) => sum + paise(r.amount), 0n
+            (sum, record) => sum + paise(record.amount), 0n
         );
         const online = state.devices[branch.branchId];
 
@@ -237,55 +243,46 @@ function renderBranches() {
             element("p",
                 branch.state + " · District: " + branch.district +
                 " · City: " + branch.city),
-            badge(online ? "Simulated Online" : "Simulated Offline",
-                online ? "online" : "offline"),
+            badge(
+                online ? "Owner simulator: Online" : "Owner simulator: Offline",
+                online ? "online" : "offline"
+            ),
             element("p", "Confirmed sales: " + money(branch.confirmedTotal)),
+            element("p", "Confirmed records: " + branch.confirmedRecordCount),
             element("p",
-                "Confirmed records: " + branch.confirmedRecordCount),
-            element("p",
-                "Pending in this browser: " + pending.length +
+                "Pending in this owner browser: " + pending.length +
                 " · " + moneyPaise(pendingAmount))
         );
 
         const button = element(
             "button", "View This Branch", "button secondary full-width"
         );
-        button.disabled = busy;
         button.addEventListener("click", () => {
             if (busy) return;
             chooseBranch(branch.branchId);
-            $("sales").scrollIntoView({ block: "start" });
+            $("ledger").scrollIntoView({ block: "start" });
         });
-        card.append(button);
+
+        const visit = element(
+            "a", "Visit Branch Workspace", "button secondary full-width"
+        );
+        visit.href = "/manager.html?branch=" +
+            encodeURIComponent(branch.branchId);
+        visit.target = "_blank";
+        visit.rel = "noopener";
+
+        card.append(button, visit);
         container.append(card);
     }
-}
-
-function chooseBranch(value) {
-    branchFilter = value;
-    $("branch-filter").value = value;
-
-    if (value !== "ALL") {
-        $("merchant-select").value = value;
-        $("target-device").value = value;
-    }
-
-    const selected = selectedRecord();
-    if (selected && value !== "ALL" && selected.merchantId !== value) {
-        state.selected = null;
-    }
-    render();
 }
 
 function recordCard(title, record) {
     const card = document.createElement("div");
     card.append(element("h3", title));
-
     if (!record) {
         card.append(element("p", "Record unavailable."));
         return card;
     }
-
     for (const [label, value] of [
         ["Item / Service", record.itemName || "Earlier test record"],
         ["Category", categories[record.category] || "Not recorded"],
@@ -307,15 +304,15 @@ function renderEvents(container, events) {
         container.append(element("p", "No activity yet.", "empty-state"));
         return;
     }
-    for (const item of events) {
+    for (const entry of events) {
         const card = element(
-            "div", undefined, "event-card " + item.status.toLowerCase()
+            "div", undefined, "event-card " + entry.status.toLowerCase()
         );
         card.append(
             element("strong",
-                item.status + " · " + (item.transactionId || "Device")),
-            element("p", item.reason),
-            element("small", new Date(item.time).toLocaleString())
+                entry.status + " · " + (entry.transactionId || "Device")),
+            element("p", entry.reason),
+            element("small", new Date(entry.time).toLocaleString())
         );
         container.append(card);
     }
@@ -325,8 +322,8 @@ function renderVerification() {
     const box = $("verification-result");
     box.replaceChildren();
     box.className = "verification-box";
-
     const local = selectedRecord();
+
     if (!local) {
         box.textContent = "Select a sale.";
         return;
@@ -335,19 +332,20 @@ function renderVerification() {
         box.textContent = "Server unavailable. Cannot verify right now.";
         return;
     }
+
     const remote = serverRecords.find(
-        (r) => r.transactionId === local.transactionId
+        (record) => record.transactionId === local.transactionId
     );
     if (!remote) {
         box.textContent = "Saved on this device. Not found on server.";
         return;
     }
+
     const match = sameDetails(local, remote);
     box.classList.add(match ? "success" : "error");
     box.append(
         element("strong", match ? "MATCH" : "DETAILS DIFFER"),
-        element("p",
-            "Local: " + money(local.amount) +
+        element("p", "Local: " + money(local.amount) +
             " | Server: " + money(remote.amount))
     );
 }
@@ -376,16 +374,23 @@ function renderConflict() {
         ));
         return;
     }
-    if (!serverConflicts.length) {
+
+    const views = serverConflicts.filter((view) =>
+        branchFilter === "ALL" ||
+        view.conflict.incomingMerchantId === branchFilter
+    );
+
+    if (!views.length) {
         container.append(element(
-            "p", "No server conflicts recorded.", "empty-state"
+            "p", "No conflicts for this branch selection.", "empty-state"
         ));
         return;
     }
 
-    for (const view of serverConflicts) {
+    for (const view of views) {
         const conflict = view.conflict;
         const card = element("article", undefined, "merchant-card");
+
         card.append(
             element("h3", "Review · " + conflict.transactionId),
             badge(conflict.status,
@@ -407,6 +412,7 @@ function renderConflict() {
             const noteId = "review-" + conflict.conflictId;
             const label = element("label", "Review note — required");
             label.htmlFor = noteId;
+
             const note = document.createElement("textarea");
             note.id = noteId;
             note.rows = 3;
@@ -422,14 +428,15 @@ function renderConflict() {
             button.disabled = busy || !view.serverRecord;
             form.append(label, note, button);
 
-            form.addEventListener("submit", (e) => {
-                e.preventDefault();
+            form.addEventListener("submit", (submission) => {
+                submission.preventDefault();
                 const reviewNote = note.value.trim();
 
                 run(async () => {
                     if (!reviewNote || reviewNote.length > 500) {
                         throw new Error("Enter a review note of 1-500 characters.");
                     }
+
                     const result = await api(
                         "/conflicts/" +
                         encodeURIComponent(conflict.conflictId) + "/resolve",
@@ -437,28 +444,35 @@ function renderConflict() {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
-                                action: "KEEP_SERVER", note: reviewNote
+                                action: "KEEP_SERVER",
+                                note: reviewNote
                             })
                         }
                     );
+
                     if (result.conflict?.status !== "RESOLVED") {
                         throw new Error("Resolution was not confirmed.");
                     }
+
                     event("RESOLVED", conflict.transactionId,
                         "Original sale preserved. " + reviewNote);
 
                     const local = state.records.find(
-                        (r) => r.transactionId === conflict.transactionId
+                        (record) =>
+                            record.transactionId === conflict.transactionId
                     );
+
                     if (local && sameDetails(local, result.serverRecord)) {
                         local.status = "SYNCED";
                         local.reason = "Original sale verified after review.";
                     }
+
                     await saveState();
                     await refreshServer();
                     notice("Conflict resolved. Original sale preserved.");
                 });
             });
+
             card.append(form);
         } else {
             card.append(
@@ -467,29 +481,38 @@ function renderConflict() {
                     new Date(conflict.resolvedAt).toLocaleString(), "helper")
             );
         }
+
         container.append(card);
     }
 }
 
 function render() {
-    const pending = state.records.filter((r) => r.status === "PENDING");
+    const pending = state.records.filter(
+        (record) => record.status === "PENDING"
+    );
     const localVisible = visibleRecords(state.records);
     const serverVisible = visibleRecords(serverRecords);
 
     $("confirmed-total").textContent = serverAvailable
         ? moneyPaise(serverRecords.reduce(
-            (sum, r) => sum + paise(r.amount), 0n))
+            (sum, record) => sum + paise(record.amount), 0n))
         : "Unavailable";
+
     $("pending-count").textContent = pending.length;
     $("duplicate-count").textContent = state.duplicates;
     $("conflict-count").textContent = conflictsAvailable
-        ? serverConflicts.filter((v) => v.conflict.status === "OPEN").length
+        ? serverConflicts.filter(
+            (view) => view.conflict.status === "OPEN"
+        ).length
         : "Unavailable";
 
-    $("ranchi-pending").textContent =
-        pending.filter((r) => r.merchantId === "RANCHI-01").length;
-    $("patna-pending").textContent =
-        pending.filter((r) => r.merchantId === "PATNA-01").length;
+    $("ranchi-pending").textContent = pending.filter(
+        (record) => record.merchantId === "RANCHI-01"
+    ).length;
+    $("patna-pending").textContent = pending.filter(
+        (record) => record.merchantId === "PATNA-01"
+    ).length;
+
     $("server-status").textContent =
         serverAvailable ? "Server Connected" : "Server Unavailable";
     $("server-status").className =
@@ -501,6 +524,7 @@ function render() {
         button.className =
             "badge merchant-toggle " + (online ? "online" : "offline");
     });
+
     $("drop-ack").textContent =
         "Drop Next Confirmation: " + (state.dropAck ? "ON" : "OFF");
     $("selected-transaction").textContent =
@@ -510,13 +534,13 @@ function render() {
 
     const localBody = $("local-transactions");
     localBody.replaceChildren();
+
     for (const record of localVisible) {
         const row = document.createElement("tr");
         const radio = document.createElement("input");
         radio.type = "radio";
         radio.name = "selected-record";
         radio.checked = state.selected === record.transactionId;
-        radio.disabled = busy;
         radio.setAttribute("aria-label",
             "Select " + (record.itemName || record.transactionId));
         radio.addEventListener("change", () => run(async () => {
@@ -527,15 +551,17 @@ function render() {
         const item = document.createElement("div");
         item.append(
             element("strong", record.itemName || "Earlier test record"),
-            element("p", categories[record.category] ||
-                "Category not recorded", "helper")
+            element("p",
+                categories[record.category] || "Category not recorded", "helper")
         );
+
         const labels = {
             PENDING: "Waiting to Sync",
             SYNCED: "Synced",
             CONFLICT: "Review Needed",
             REJECTED: "Needs Correction"
         };
+
         cell(row, radio);
         cell(row, item);
         cell(row, storeName(record.merchantId));
@@ -544,6 +570,7 @@ function render() {
         cell(row, record.reason);
         localBody.append(row);
     }
+
     if (!localVisible.length) {
         emptyRow(localBody, 6, "No local sales for this branch selection.");
     }
@@ -551,11 +578,13 @@ function render() {
     const details = $("sale-details");
     details.replaceChildren();
     const selected = selectedRecord();
-    details.append(selected ? recordCard("Sale", selected) :
-        element("p", "Select a sale above.", "empty-state"));
+    details.append(selected
+        ? recordCard("Sale", selected)
+        : element("p", "Select a sale above.", "empty-state"));
 
     const serverBody = $("server-transactions");
     serverBody.replaceChildren();
+
     if (serverAvailable) {
         for (const record of serverVisible) {
             const row = document.createElement("tr");
@@ -574,7 +603,7 @@ function render() {
             emptyRow(serverBody, 4, "No server sales for this branch selection.");
         }
     } else {
-        emptyRow(serverBody, 4, "Server unavailable. Refresh to retry.");
+        emptyRow(serverBody, 4, "Server data unavailable. Refresh to retry.");
     }
 
     $("ledger-count").textContent = serverAvailable
@@ -588,9 +617,9 @@ function render() {
     renderConflict();
 
     document.querySelectorAll("button, select, input, textarea")
-        .forEach((node) => {
-            if (node.closest("#conflict-details")) return;
-            node.disabled = busy;
+        .forEach((control) => {
+            if (control.closest("#conflict-details")) return;
+            control.disabled = busy;
         });
 }
 
@@ -626,6 +655,7 @@ async function send(record, incoming = payload(record)) {
         notice("Branch is simulated offline. Sale stays on this device.");
         return false;
     }
+
     event("SENT", record.transactionId, "Sync request sent.");
     await saveState();
 
@@ -635,6 +665,7 @@ async function send(record, incoming = payload(record)) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(incoming)
         });
+
         if (!["ACCEPTED", "DUPLICATE", "CONFLICT", "REJECTED"]
                 .includes(result.status)) {
             throw new Error("Unexpected server response.");
@@ -646,15 +677,20 @@ async function send(record, incoming = payload(record)) {
                 "Response intentionally discarded. Local status unchanged.");
             await saveState();
             notice("Confirmation dropped. Retry safely.");
-            return true;
+            return false;
         }
 
         event(result.status, record.transactionId, result.reason);
         if (result.status === "DUPLICATE") state.duplicates++;
 
-        if (result.status === "ACCEPTED" || result.status === "DUPLICATE") {
-            record.status = "SYNCED";
-            record.reason = result.reason;
+        if (["ACCEPTED", "DUPLICATE"].includes(result.status)) {
+            if (!sameDetails(incoming, result.serverRecord)) {
+                throw new Error("Server confirmation details do not match.");
+            }
+            if (sameDetails(incoming, record)) {
+                record.status = "SYNCED";
+                record.reason = result.reason;
+            }
         } else if (result.status === "CONFLICT") {
             record.conflict = {
                 incoming: structuredClone(incoming),
@@ -668,12 +704,13 @@ async function send(record, incoming = payload(record)) {
             record.status = "REJECTED";
             record.reason = result.reason;
         }
+
         await saveState();
         notice(result.status + ": " + result.reason);
         return true;
     } catch (error) {
         event("ERROR", record.transactionId,
-            "No usable confirmation. " + error.message);
+            "No verified confirmation. " + error.message);
         await saveState();
         notice("Sync failed. Local sale preserved. " + error.message, true);
         return false;
@@ -681,12 +718,13 @@ async function send(record, incoming = payload(record)) {
 }
 
 function wireControls() {
-    $("branch-filter").addEventListener("change", (e) => {
-        chooseBranch(e.target.value);
+    $("branch-filter").addEventListener("change", (change) => {
+        chooseBranch(change.target.value);
     });
 
-    $("transaction-form").addEventListener("submit", (e) => {
-        e.preventDefault();
+    $("transaction-form").addEventListener("submit", (submission) => {
+        submission.preventDefault();
+
         const category = $("category").value;
         const itemName = $("item-name").value.trim();
         const note = $("sale-note").value.trim();
@@ -698,8 +736,9 @@ function wireControls() {
             if (amountPaise <= 0n || amountPaise > 999999999999999n) {
                 throw new Error("Amount must be positive and within the limit.");
             }
-            if (!categories[category]) {
-                throw new Error("Choose a category.");
+            if (!categories[category]) throw new Error("Choose a category.");
+            if (!["RANCHI-01", "PATNA-01"].includes(merchantId)) {
+                throw new Error("Choose a valid branch.");
             }
             if (!itemName || itemName.length > 120) {
                 throw new Error("Enter an item name, up to 120 characters.");
@@ -714,11 +753,13 @@ function wireControls() {
                 amount: decimal(amountPaise),
                 currency: "INR",
                 createdAt: new Date().toISOString(),
-                category, itemName,
+                category,
+                itemName,
                 note: note || null,
                 status: "PENDING",
                 reason: "Saved on this device. Awaiting server confirmation."
             };
+
             state.records.unshift(record);
             state.selected = record.transactionId;
             event("PENDING", record.transactionId, record.reason);
@@ -742,11 +783,12 @@ function wireControls() {
             event("DEVICE", merchant, "Simulated connection: " +
                 (state.devices[merchant] ? "Online" : "Offline"));
             await saveState();
-            notice("Simulated branch connection updated.");
+            notice("Owner simulator connection updated.");
         }));
     });
 
     $("refresh-ledger").addEventListener("click", () => run(refreshServer));
+
     $("drop-ack").addEventListener("click", () => run(async () => {
         state.dropAck = !state.dropAck;
         await saveState();
@@ -757,12 +799,11 @@ function wireControls() {
     $("sync-pending").addEventListener("click", () => run(async () => {
         const merchant = $("target-device").value;
         if (!state.devices[merchant]) {
-            throw new Error(
-                "Branch is simulated offline. Set it online in Testing Lab."
-            );
+            throw new Error("Branch is simulated offline. Set it online.");
         }
         const pending = state.records.filter(
-            (r) => r.merchantId === merchant && r.status === "PENDING"
+            (record) => record.merchantId === merchant &&
+                record.status === "PENDING"
         );
         if (!pending.length) notice("No pending sales for this branch.");
         for (const record of pending) {
@@ -774,10 +815,7 @@ function wireControls() {
     $("retry-ten").addEventListener("click", () => run(async () => {
         const record = selectedRecord();
         if (!record) throw new Error("Select a sale first.");
-        if (!state.devices[record.merchantId]) {
-            throw new Error("Selected branch is simulated offline.");
-        }
-        for (let i = 0; i < 10; i++) {
+        for (let index = 0; index < 10; index++) {
             if (!await send(record)) break;
         }
         await refreshServer();
@@ -789,15 +827,17 @@ function wireControls() {
         await refreshServer();
 
         if (!serverAvailable || !serverRecords.some(
-            (r) => r.transactionId === record.transactionId
+            (saved) => saved.transactionId === record.transactionId
         )) {
             throw new Error("Sync this sale before injecting a conflict.");
         }
-        const incoming = payload(record);
+
         const changed = paise(record.amount) + 5000n;
         if (changed > 999999999999999n) {
             throw new Error("Changed amount would exceed the limit.");
         }
+
+        const incoming = payload(record);
         incoming.amount = decimal(changed);
         await send(record, incoming);
         await refreshServer();
@@ -815,6 +855,7 @@ function wireControls() {
             serverConflicts: conflictsAvailable ? serverConflicts : null,
             branchOverview: branchesAvailable ? branchOverview : null
         };
+
         const url = URL.createObjectURL(new Blob(
             [JSON.stringify(report, null, 2)],
             { type: "application/json" }
@@ -827,19 +868,61 @@ function wireControls() {
     });
 }
 
+function loadScript(source) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = source;
+        script.onload = resolve;
+        script.onerror = () => reject(
+            new Error("Could not load " + source)
+        );
+        document.head.append(script);
+    });
+}
+
 async function initialize() {
     try {
+        if (!window.SyncLedgerAuth) {
+            await loadScript("/auth-client.js");
+        }
+
+        const session = await window.SyncLedgerAuth.loadSession();
+        if (session.role !== "OWNER") {
+            throw new Error("Owner login required.");
+        }
+
         await openStorage();
         await loadState();
         wireControls();
-        await refreshServer();
-        if (serverAvailable) {
-            notice("Ready. Record a sale for Ranchi or Patna.");
+        render();
+
+        const logoutButton = element(
+            "button", "Logout", "button secondary"
+        );
+        logoutButton.addEventListener("click", () => run(async () => {
+            await saveState();
+            await window.SyncLedgerAuth.logout();
+        }));
+        $("refresh-ledger").parentElement.append(logoutButton);
+
+        if (!window.syncLedgerConnectionBanner) {
+            await loadScript("/connection-status.js");
         }
+
+        await run(refreshServer);
+        if (serverAvailable) {
+            notice("Owner dashboard ready. All branches are available.");
+        }
+
+        setInterval(() => {
+            if (!busy && !document.hidden) run(refreshServer);
+        }, 15000);
     } catch (error) {
         notice("Initialization failed: " + error.message, true);
         document.querySelectorAll("button, input, select, textarea")
-            .forEach((node) => { node.disabled = true; });
+            .forEach((control) => {
+                control.disabled = true;
+            });
     }
 }
 

@@ -3,6 +3,7 @@ package com.syncledger;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,22 +22,47 @@ public class ConflictController {
     public ConflictController(
             ConflictRepository conflictRepository,
             TransactionRepository transactionRepository) {
+
         this.conflictRepository = conflictRepository;
         this.transactionRepository = transactionRepository;
     }
 
     @GetMapping
-    public List<ConflictView> getConflicts() {
+    public List<ConflictView> getConflicts(
+            Authentication authentication) {
+
+        if (isOwner(authentication)) {
+            return conflictRepository.findAllByOrderByDetectedAtDesc()
+                    .stream()
+                    .map(this::toView)
+                    .toList();
+        }
+
+        String assignedBranch = managerBranch(authentication);
+
         return conflictRepository.findAllByOrderByDetectedAtDesc()
                 .stream()
+                .filter(conflict -> assignedBranch.equals(
+                        conflict.getIncomingMerchantId()))
                 .map(this::toView)
+                .filter(view -> view.serverRecord() == null
+                        || assignedBranch.equals(
+                                view.serverRecord().getMerchantId()))
                 .toList();
     }
 
     @PostMapping("/{conflictId}/resolve")
     public synchronized ConflictView resolveConflict(
             @PathVariable("conflictId") String conflictId,
-            @RequestBody ResolveRequest request) {
+            @RequestBody ResolveRequest request,
+            Authentication authentication) {
+
+        if (!isOwner(authentication)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Only the owner can resolve conflicts."
+            );
+        }
 
         if (request == null
                 || !"KEEP_SERVER".equals(request.action())) {
@@ -89,6 +115,47 @@ public class ConflictController {
                 .orElse(null);
 
         return new ConflictView(conflict, serverRecord);
+    }
+
+    private boolean isOwner(Authentication authentication) {
+        return authentication != null
+                && authentication.getAuthorities().stream()
+                        .anyMatch(authority ->
+                                authority.getAuthority().equals("ROLE_OWNER"));
+    }
+
+    private String managerBranch(Authentication authentication) {
+
+        if (authentication == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Login required."
+            );
+        }
+
+        boolean manager = authentication.getAuthorities().stream()
+                .anyMatch(authority ->
+                        authority.getAuthority().equals("ROLE_MANAGER"));
+
+        if (!manager) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Branch manager access required."
+            );
+        }
+
+        return authentication.getAuthorities().stream()
+                .map(authority -> authority.getAuthority())
+                .filter(authority ->
+                        authority.equals("BRANCH_RANCHI-01")
+                                || authority.equals("BRANCH_PATNA-01"))
+                .map(authority ->
+                        authority.substring("BRANCH_".length()))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.FORBIDDEN,
+                        "No branch assigned to this account."
+                ));
     }
 
     public record ResolveRequest(
