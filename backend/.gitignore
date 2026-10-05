@@ -1,0 +1,56 @@
+# Build output
+HELP.md
+target/
+build/
+dist/
+*.class
+*.log
+.mvn/wrapper/maven-wrapper.jar
+
+# Local secrets
+.env
+.env.*
+!.env.example
+application-local.properties
+application-local.yml
+application-local.yaml
+*.pem
+*.key
+*.p12
+*.jks
+
+# Database dumps and backups
+*.sql
+*.bak
+*.zip
+backups/
+checkpoint_*/
+
+# Spring Tool Suite
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/nbdist/
+/.nb-gradle/
+
+# VS Code
+.vscode/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini

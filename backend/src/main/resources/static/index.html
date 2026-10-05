@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SyncLedger | Owner Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="app.js" defer></script>
+</head>
+<body>
+    <aside class="sidebar">
+        <a class="brand" href="/">
+            <span class="brand-icon">SL</span>
+            <span>
+                <strong>SyncLedger</strong>
+                <small>One owner. Connected branches.</small>
+            </span>
+        </a>
+
+        <nav aria-label="Main navigation">
+            <a class="nav-link active" href="#branches">Branch Overview</a>
+            <a class="nav-link" href="#devices">New Sale</a>
+            <a class="nav-link" href="#sales">Branch Sales</a>
+            <a class="nav-link" href="#ledger">Central Ledger</a>
+            <a class="nav-link" href="#testing-lab">Testing Lab</a>
+            <a class="nav-link" href="#conflicts">Conflict Review</a>
+            <a class="nav-link" href="#audit">Activity Trail</a>
+        </nav>
+
+        <div class="sidebar-note">
+            <span class="badge warning">SIMULATION</span>
+            <p>Demo owner workspace. No real money transfers.</p>
+        </div>
+    </aside>
+
+    <main id="dashboard">
+        <header class="page-header">
+            <div>
+                <p class="eyebrow">ONE OWNER · MULTIPLE BRANCHES</p>
+                <h1>Owner Dashboard</h1>
+                <p class="subtitle">
+                    Track branch sales and reconcile records in one place.
+                </p>
+            </div>
+            <div class="header-status">
+                <span id="server-status" class="badge">Checking server…</span>
+                <button id="refresh-ledger" class="button secondary">
+                    Refresh Records
+                </button>
+            </div>
+        </header>
+
+        <div id="notice" class="notice" role="status" aria-live="polite">
+            Initializing local storage…
+        </div>
+
+        <section class="metrics" aria-label="All-store overview">
+            <article class="metric-card">
+                <span>Server Ledger Total</span>
+                <strong id="confirmed-total">—</strong>
+                <small>All confirmed records, across stores</small>
+            </article>
+            <article class="metric-card amber">
+                <span>Waiting to Sync</span>
+                <strong id="pending-count">—</strong>
+                <small>Pending records in this browser</small>
+            </article>
+            <article class="metric-card cyan">
+                <span>Duplicate Responses</span>
+                <strong id="duplicate-count">—</strong>
+                <small>Retries detected by this browser</small>
+            </article>
+            <article class="metric-card coral">
+                <span>Open Server Conflicts</span>
+                <strong id="conflict-count">—</strong>
+                <small>Across server records</small>
+            </article>
+        </section>
+
+        <section id="branches" class="panel">
+            <div class="panel-heading">
+                <div>
+                    <h2>My Branches</h2>
+                    <p id="owner-group" class="helper">Loading demo group…</p>
+                </div>
+                <span class="badge duplicate">2 DEMO BRANCHES</span>
+            </div>
+
+            <div id="branch-overview" class="conflict-grid">
+                <p class="empty-state">Loading branch totals…</p>
+            </div>
+
+            <label for="branch-filter">View Sales for</label>
+            <select id="branch-filter">
+                <option value="ALL">All Branches</option>
+                <option value="RANCHI-01">Ranchi · Jharkhand</option>
+                <option value="PATNA-01">Patna · Bihar</option>
+            </select>
+
+            <p class="helper">
+                Branch totals are confirmed server records.
+                Pending counts cover this browser only.
+                Branch filtering changes the sales lists; top metrics remain overall.
+            </p>
+        </section>
+
+        <section class="workspace">
+            <article id="devices" class="panel">
+                <div class="panel-heading">
+                    <h2>Record a Sale</h2>
+                    <span class="muted">Choose the branch that made the sale</span>
+                </div>
+
+                <form id="transaction-form">
+                    <label for="merchant-select">Branch</label>
+                    <select id="merchant-select" required>
+                        <option value="RANCHI-01">Ranchi · Jharkhand</option>
+                        <option value="PATNA-01">Patna · Bihar</option>
+                    </select>
+
+                    <label for="category">Category</label>
+                    <select id="category" required>
+                        <option value="">Choose a category</option>
+                        <option value="GROCERY">Grocery / Kirana</option>
+                        <option value="FOOD">Food &amp; Beverages</option>
+                        <option value="CLOTHING">Clothing</option>
+                        <option value="ELECTRONICS">Electronics</option>
+                        <option value="SERVICES">Services</option>
+                        <option value="OTHER">Other</option>
+                    </select>
+
+                    <label for="item-name">Item or Service</label>
+                    <input id="item-name" type="text" maxlength="120"
+                        placeholder="Example: Rice 5 kg" required>
+
+                    <label for="amount">Sale Amount ₹</label>
+                    <input id="amount" type="number" inputmode="decimal"
+                        min="0.01" max="9999999999999.99" step="0.01"
+                        placeholder="Example: 200.00" required>
+
+                    <label for="sale-note">Note — optional</label>
+                    <textarea id="sale-note" rows="3" maxlength="500"
+                        placeholder="Add details to explain this sale"></textarea>
+
+                    <button class="button primary full-width" type="submit">
+                        Save Sale on This Device
+                    </button>
+                </form>
+
+                <p class="helper">
+                    Saves a simulated sale locally.
+                    It does not charge a customer or transfer money.
+                </p>
+            </article>
+
+            <article class="panel">
+                <div class="panel-heading">
+                    <h2>Sync Branch Sales</h2>
+                    <span class="muted">Confirm pending records</span>
+                </div>
+
+                <label for="target-device">Branch to Sync</label>
+                <select id="target-device">
+                    <option value="RANCHI-01">Ranchi · Jharkhand</option>
+                    <option value="PATNA-01">Patna · Bihar</option>
+                </select>
+
+                <button id="sync-pending" class="button primary full-width">
+                    Sync Pending Sales
+                </button>
+
+                <p class="helper">
+                    Sales remain locally pending until confirmed.
+                    Retrying the same sale does not count it twice.
+                </p>
+
+                <div class="merchant-card">
+                    <h3>Ranchi Store</h3>
+                    <p>Pending here: <strong id="ranchi-pending">0</strong></p>
+                </div>
+                <div class="merchant-card">
+                    <h3>Patna Store</h3>
+                    <p>Pending here: <strong id="patna-pending">0</strong></p>
+                </div>
+            </article>
+
+            <article class="panel">
+                <div class="panel-heading">
+                    <h2>Recent Activity</h2>
+                    <span class="muted">This browser</span>
+                </div>
+                <div id="decision-feed" class="decision-feed"></div>
+            </article>
+        </section>
+
+        <section id="sales" class="panel">
+            <div class="panel-heading">
+                <h2>Sales on This Device</h2>
+                <span class="muted">Uses the branch filter above</span>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Select</th>
+                            <th>Item / Category</th>
+                            <th>Branch</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="local-transactions"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="bottom-grid">
+            <article class="panel">
+                <div class="panel-heading"><h2>Selected Sale Details</h2></div>
+                <div id="sale-details"></div>
+            </article>
+            <article class="panel">
+                <div class="panel-heading"><h2>Server Verification</h2></div>
+                <div id="verification-result" class="verification-box"></div>
+                <p class="helper">
+                    Compares ID, branch, amount, currency, creation time,
+                    category, item and note.
+                </p>
+            </article>
+        </section>
+
+        <section id="ledger" class="panel">
+            <div class="panel-heading">
+                <h2>Central Ledger</h2>
+                <span id="ledger-count" class="muted">Loading…</span>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Item / Transaction</th>
+                            <th>Branch</th>
+                            <th>Amount</th>
+                            <th>Received At</th>
+                        </tr>
+                    </thead>
+                    <tbody id="server-transactions"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="testing-lab" class="panel network-panel">
+            <details>
+                <summary>Testing Lab — failure demonstrations</summary>
+                <p class="helper">
+                    Demo controls simulate each branch's connection separately.
+                </p>
+
+                <div class="merchant-card">
+                    <div class="merchant-heading">
+                        <h3>Ranchi Simulated Connection</h3>
+                        <button class="badge merchant-toggle"
+                            data-merchant="RANCHI-01"
+                            aria-label="Toggle Ranchi simulated connection">
+                            Online
+                        </button>
+                    </div>
+                </div>
+                <div class="merchant-card">
+                    <div class="merchant-heading">
+                        <h3>Patna Simulated Connection</h3>
+                        <button class="badge merchant-toggle"
+                            data-merchant="PATNA-01"
+                            aria-label="Toggle Patna simulated connection">
+                            Online
+                        </button>
+                    </div>
+                </div>
+
+                <div class="network-visual">
+                    <div class="network-node">
+                        <span class="node-icon">DEV</span>
+                        <strong>Merchant Browser</strong>
+                        <small>IndexedDB queue</small>
+                    </div>
+                    <div class="connection-line">
+                        <span>REST / JSON</span>
+                        <div class="connection-track"></div>
+                    </div>
+                    <div class="network-node">
+                        <span class="node-icon server-icon">DB</span>
+                        <strong>Central Server</strong>
+                        <small>Spring Boot + MySQL</small>
+                    </div>
+                </div>
+
+                <div class="control-grid">
+                    <button id="drop-ack" class="button amber-button">
+                        Drop Next Confirmation: OFF
+                    </button>
+                    <button id="retry-ten" class="button secondary">
+                        Retry Selected ×10
+                    </button>
+                    <button id="inject-conflict" class="button danger">
+                        Inject Amount Conflict
+                    </button>
+                </div>
+
+                <p class="helper">
+                    Dropped confirmation discards the response in this browser.
+                    A server-saved sale can remain locally pending.
+                </p>
+                <div class="selection-box">
+                    <span>Selected Transaction</span>
+                    <strong id="selected-transaction">None selected</strong>
+                </div>
+            </details>
+        </section>
+
+        <section id="conflicts" class="panel">
+            <div class="panel-heading">
+                <h2>Conflict Review</h2>
+                <span class="muted">All branches · preserve original sale</span>
+            </div>
+            <div id="conflict-details"></div>
+        </section>
+
+        <section id="audit" class="panel">
+            <div class="panel-heading">
+                <h2>Browser Activity Trail</h2>
+                <button id="export-report" class="button secondary">
+                    Export Report
+                </button>
+            </div>
+            <p class="helper">
+                Activity is stored in this browser.
+                Conflict reviews are stored on the server.
+            </p>
+            <div id="audit-events"></div>
+        </section>
+
+        <footer>
+            SyncLedger · Demo owner workspace ·
+            Offline Payment Reconciliation Simulator · No real money transfer
+        </footer>
+    </main>
+</body>
+</html>

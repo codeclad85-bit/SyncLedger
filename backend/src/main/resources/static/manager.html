@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SyncLedger | Branch Manager</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="manager.js" defer></script>
+</head>
+<body>
+    <aside class="sidebar">
+        <a class="brand" href="/manager.html">
+            <span class="brand-icon">SL</span>
+            <span>
+                <strong>SyncLedger</strong>
+                <small>Branch Manager Portal</small>
+            </span>
+        </a>
+
+        <nav aria-label="Branch navigation">
+            <a class="nav-link active" href="#new-sale">New Sale</a>
+            <a class="nav-link" href="#branch-sales">Branch Sales</a>
+            <a class="nav-link" href="#branch-lab">Testing Lab</a>
+            <a class="nav-link" href="#branch-activity">Activity</a>
+            <a class="nav-link" href="/">Owner Dashboard</a>
+        </nav>
+
+        <div class="sidebar-note">
+            <span class="badge warning">SIMULATION</span>
+            <p>Demo branch selection. No real money transfers.</p>
+        </div>
+    </aside>
+
+    <main>
+        <header class="page-header">
+            <div>
+                <p class="eyebrow">BRANCH WORKSPACE</p>
+                <h1 id="branch-title">Branch Manager</h1>
+                <p id="branch-location" class="subtitle">
+                    Loading branch…
+                </p>
+            </div>
+            <div class="header-status">
+                <span id="manager-server-status" class="badge">
+                    Checking server…
+                </span>
+                <button id="manager-refresh" class="button secondary">
+                    Refresh Status
+                </button>
+            </div>
+        </header>
+
+        <div id="manager-notice" class="notice"
+            role="status" aria-live="polite">
+            Initializing branch storage…
+        </div>
+
+        <section class="panel">
+            <label for="manager-branch">Demo Branch Workspace</label>
+            <select id="manager-branch">
+                <option value="RANCHI-01">Ranchi · Jharkhand</option>
+                <option value="PATNA-01">Patna · Bihar</option>
+            </select>
+            <p class="helper">
+                Select a branch for the demo. This selector is not a login
+                or an access restriction.
+            </p>
+        </section>
+
+        <section class="metrics" aria-label="Selected branch overview">
+            <article class="metric-card">
+                <span>Branch Confirmed Total</span>
+                <strong id="manager-total">—</strong>
+                <small id="manager-snapshot-time">Checking server</small>
+            </article>
+            <article class="metric-card amber">
+                <span>Waiting to Sync</span>
+                <strong id="manager-pending">—</strong>
+                <small>Pending in this browser</small>
+            </article>
+            <article class="metric-card cyan">
+                <span>Duplicate Responses</span>
+                <strong id="manager-duplicates">—</strong>
+                <small>Detected here for this branch</small>
+            </article>
+            <article class="metric-card coral">
+                <span>Open Conflicts</span>
+                <strong id="manager-conflicts">—</strong>
+                <small>Selected branch server conflicts</small>
+            </article>
+        </section>
+
+        <section class="bottom-grid">
+            <article id="new-sale" class="panel">
+                <div class="panel-heading">
+                    <h2>Record a Sale</h2>
+                    <span class="muted">Saved locally first</span>
+                </div>
+
+                <form id="manager-sale-form">
+                    <label for="manager-category">Category</label>
+                    <select id="manager-category" required>
+                        <option value="">Choose a category</option>
+                        <option value="GROCERY">Grocery / Kirana</option>
+                        <option value="FOOD">Food &amp; Beverages</option>
+                        <option value="CLOTHING">Clothing</option>
+                        <option value="ELECTRONICS">Electronics</option>
+                        <option value="SERVICES">Services</option>
+                        <option value="OTHER">Other</option>
+                    </select>
+
+                    <label for="manager-item">Item or Service</label>
+                    <input id="manager-item" type="text"
+                        maxlength="120" placeholder="Example: Rice 5 kg"
+                        required>
+
+                    <label for="manager-amount">Amount ₹</label>
+                    <input id="manager-amount" type="number"
+                        inputmode="decimal" min="0.01"
+                        max="9999999999999.99" step="0.01"
+                        placeholder="Example: 300.00" required>
+
+                    <label for="manager-note">Note — optional</label>
+                    <textarea id="manager-note" rows="3" maxlength="500"
+                        placeholder="Details explaining this sale"></textarea>
+
+                    <button type="submit"
+                        class="button primary full-width">
+                        Save Sale
+                    </button>
+                </form>
+
+                <p class="helper">
+                    Creates a simulated transaction for the selected branch.
+                    No customer is charged.
+                </p>
+            </article>
+
+            <article class="panel">
+                <div class="panel-heading">
+                    <h2>Connection &amp; Sync</h2>
+                </div>
+
+                <span id="manager-connection" class="badge">
+                    Checking connection…
+                </span>
+
+                <button id="manager-sync"
+                    class="button primary full-width">
+                    Sync Pending Sales
+                </button>
+
+                <label for="manager-auto-sync">
+                    Automatic Sync
+                </label>
+                <select id="manager-auto-sync">
+                    <option value="ON">On — retry pending sales when connected</option>
+                    <option value="OFF">Off — sync manually for the demo</option>
+                </select>
+
+                <p class="helper">
+                    The owner receives confirmed sales after sync.
+                    Unsynced sales remain on this device.
+                </p>
+
+                <div class="selection-box">
+                    <span>Selected Sale</span>
+                    <strong id="manager-selected">None selected</strong>
+                </div>
+            </article>
+        </section>
+
+        <section id="branch-sales" class="panel">
+            <div class="panel-heading">
+                <h2>Sales on This Branch Device</h2>
+                <span class="muted">Only the selected branch is shown</span>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Select</th>
+                            <th>Item / Category</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="manager-local-sales"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="bottom-grid">
+            <article class="panel">
+                <div class="panel-heading">
+                    <h2>Selected Sale Details</h2>
+                </div>
+                <div id="manager-sale-details"></div>
+            </article>
+
+            <article class="panel">
+                <div class="panel-heading">
+                    <h2>Server Verification</h2>
+                </div>
+                <div id="manager-verification"
+                    class="verification-box">
+                    Select a sale.
+                </div>
+            </article>
+        </section>
+
+        <section class="panel">
+            <div class="panel-heading">
+                <h2>Branch Server Ledger</h2>
+                <span id="manager-ledger-count" class="muted">—</span>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Item / Transaction</th>
+                            <th>Amount</th>
+                            <th>Received At</th>
+                        </tr>
+                    </thead>
+                    <tbody id="manager-server-sales"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="branch-lab" class="panel">
+            <details>
+                <summary>Testing Lab — branch failure simulation</summary>
+
+                <div class="control-grid">
+                    <button id="manager-toggle"
+                        class="button amber-button">
+                        Set Simulated Offline
+                    </button>
+                    <button id="manager-drop"
+                        class="button amber-button">
+                        Drop Next Confirmation: OFF
+                    </button>
+                    <button id="manager-retry"
+                        class="button secondary">
+                        Retry Selected ×10
+                    </button>
+                    <button id="manager-inject"
+                        class="button danger">
+                        Inject Amount Conflict
+                    </button>
+                </div>
+
+                <p class="helper">
+                    Use manual sync during failure demonstrations.
+                    Dropped confirmation intentionally discards a response
+                    after the server processes the request.
+                    Review conflicts in the owner dashboard.
+                </p>
+            </details>
+        </section>
+
+        <section id="branch-activity" class="panel">
+            <div class="panel-heading">
+                <h2>Branch Browser Activity</h2>
+            </div>
+            <div id="manager-events" class="decision-feed"></div>
+        </section>
+
+        <footer>
+            SyncLedger · Branch reconciliation simulator ·
+            No real money transfer
+        </footer>
+    </main>
+</body>
+</html>
